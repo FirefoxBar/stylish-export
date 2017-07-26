@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Stylish for Firefox Convert</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta charset="utf-8">
+	<link rel="stylesheet" type="text/css" href="https://cdn.bootcss.com/material-design-icons/3.0.1/iconfont/material-icons.min.css">
+	<link rel="stylesheet" type="text/css" href="https://cdn.bootcss.com/material-design-lite/1.3.0/material.teal-red.min.css">
+	<!--[if lt IE 9]>
+	<script src="//cdn.bootcss.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+	<![endif]-->
+	<style>
+	body {
+		background-color: #EEE;
+	}
+	.main {
+		width: 100%;
+		max-width: 1280px;
+		margin: 10px auto;
+	}
+	.main > * {
+		width: 100%;
+		margin-bottom: 10px;
+		min-height: 0;
+	}
+	.mdl-card__supporting-text {
+		width: 100%;
+		box-sizing: border-box;
+	}
+	#download-label {
+		display: none;
+	}
+	</style>
+</head>
+<body>
+<div class="main">
+<div class="mdl-card mdl-shadow--2dp">
+	<div class="mdl-card__title">
+		<h2 class="mdl-card__title-text">使用说明(Usage)</h2>
+	</div>
+	<div class="mdl-card__supporting-text">
+		<p>1.找到火狐个人文件夹（如果你不知道在哪，可以打开about:support，点击“配置文件夹”右边的“打开文件夹”）</p>
+		<p>2.复制出stylish.sqlite</p>
+		<p>3.在下面选择文件的地方，选择stylish.sqlite</p>
+		<p>4.稍等片刻，浏览器会弹出下载窗口，将其另存为</p>
+		<p>5.打开xStyle管理界面，选择“从备份文件导入”，选择刚才下载到的文件</p>
+		<p>注意：此操作将会覆盖xStyle中已有的样式<p>
+		<p>1.Find the Firefox profiles folder (if you do not know where it is, you can open about: support, click the "open folder" on right of "configuration folder")</p>
+		<p>2.Copy out stylish.sqlite</p>
+		<p>3.Select stylish.sqlite below</p>
+		<p>4.Wait a moment, the browser will pop up the download window, save it as</p>
+		<p>5.Open the xStyle management interface, select "Retrieve Backup", select the file just downloaded</p>
+		<p>Note: This will overwrite the existing style in xStyle<p>
+		<p>在这里选择文件(Select the file here): <input type="file" id="dbfile"></p>
+		<p id="download-label"><a href="#" id="download">Download</a></p>
+	</div>
+</div>
+<script src="https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+<script src="https://cdn.bootcss.com/material-design-lite/1.3.0/material.min.js"></script>
+<script src="index.js"></script>
+</body>
+</html>
