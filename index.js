@@ -129,7 +129,7 @@ var convert = function() {
 					"regexps": [],
 					"code": ""
 				};
-				f = codeContent[j].trim();
+				f = codeContent[j].replace('@namespace url(http://www.w3.org/1999/xhtml);', '').trim();
 				if (f === '') {
 					continue;
 				}
