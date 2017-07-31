@@ -134,7 +134,7 @@ var convert = function() {
 					continue;
 				}
 				while (true) {
-					f = f.trim();
+					f = f.trim().replace(/^,/, '').trim();
 					var m = f.match(/^(url|url-prefix|domain|regexp)\((['"]?)(.+?)\2\)/);
 					if (!m) {
 						break;
