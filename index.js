@@ -7,10 +7,6 @@ worker.onerror = error;
 // Open a database
 worker.postMessage({action:'open'});
 
-// Connect to the HTML element we 'print' to
-function print(text) {
-	outputElm.innerHTML = text.replace(/\n/g, '<br>');
-}
 function error(e) {
 	console.log(e);
 }
