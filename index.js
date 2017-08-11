@@ -116,8 +116,9 @@ var convert = function() {
 			}
 			// code
 			var codeContent = result[0].values[i][code];
-			codeContent = codeContent.trim().split('@-moz-document ');
-			for (var j = 0; j < codeContent.length; j++) {
+			// split by @-moz-document
+			var sections = codeContent.trim().split('@-moz-document ');
+			for (let f of sections) {
 				var section = {
 					"urls": [],
 					"urlPrefixes": [],
@@ -125,12 +126,8 @@ var convert = function() {
 					"regexps": [],
 					"code": ""
 				};
-				f = codeContent[j].replace('@namespace url(http://www.w3.org/1999/xhtml);', '').trim();
-				if (f === '') {
-					continue;
-				}
 				while (true) {
-					f = f.trim().replace(/^,/, '').trim();
+					f = trimNewLines(trimNewLines(f).replace(/^,/, ''));
 					var m = f.match(/^(url|url-prefix|domain|regexp)\((['"]?)(.+?)\2\)/);
 					if (!m) {
 						break;
@@ -142,14 +139,54 @@ var convert = function() {
 						section[aType].push(aValue);
 					}
 				}
-				section.code = f.replace(/^{/, '').replace(/\}$/, '').trim();
-				style.sections.push(section);
-			};
+				// split this stype
+				var index = 0;
+				var leftCount = 0;
+				while (index < f.length) {
+					// ignore comments
+					if (f[index] === '/' && f[index + 1] === '*') {
+						index += 2;
+						while (f[index] !== '*' || f[index + 1] !== '/') {
+							index++;
+						}
+						index += 2;
+					}
+					if (f[index] === '{') {
+						leftCount++;
+					}
+					if (f[index] === '}') {
+						leftCount--;
+					}
+					index++;
+					if (leftCount <= 0) {
+						break;
+					}
+				}
+				section.code = trimNewLines(f.substr(1, index - 2));
+				addSection(style, section);
+				if (index < f.length) {
+					addSection(style, {
+						"urls": [],
+						"urlPrefixes": [],
+						"domains": [],
+						"regexps": [],
+						"code": trimNewLines(f.substr(index))
+					});
+				}
+			}
 			rs.push(style);
 		}
 		download('xtyle.json', JSON.stringify(rs));
 	});
 };
+
+function addSection(style, section) {
+	// don't add empty sections
+	if (!(section.code || section.urls || section.urlPrefixes || section.domains || section.regexps)) {
+		return;
+	}
+	style.sections.push(section);
+}
 
 var download = function(name, content) {
 	var a = document.getElementById('download');
