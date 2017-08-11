@@ -188,6 +188,10 @@ function addSection(style, section) {
 	style.sections.push(section);
 }
 
+function trimNewLines(s) {
+	return s.replace(/^[\s\n]+/, "").replace(/[\s\n]+$/, "");
+}
+
 var download = function(name, content) {
 	var a = document.getElementById('download');
 	var blob = new Blob([content]);
