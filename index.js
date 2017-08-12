@@ -111,11 +111,15 @@ var convert = function() {
 			};
 			// updateUrl
 			if (style.updateUrl.indexOf('userstyles.org') > 0) {
-				var style_id = result[0].values[i][updateUrl].match(/styles\/(\d+)\//)[1];
+				try {
+					var style_id = result[0].values[i][updateUrl].match(/styles\/(\d+)\//)[1];
+				} catch (e) {
+					var style_id = result[0].values[i][updateUrl].match(/styles\/(\d+)\.css/)[1];
+				}
 				style.updateUrl = 'https://userstyles.org/styles/chrome/' + style_id + '.json';
 			}
 			// code
-			var codeContent = result[0].values[i][code];
+			var codeContent = result[0].values[i][code].replace(/@namespace url\((.*?)\);/g, "");
 			// split by @-moz-document
 			var sections = codeContent.trim().split('@-moz-document ');
 			for (let f of sections) {
@@ -139,7 +143,7 @@ var convert = function() {
 						section[aType].push(aValue);
 					}
 				}
-				// split this stype
+				// split this section
 				var index = 0;
 				var leftCount = 0;
 				while (index < f.length) {
@@ -162,17 +166,21 @@ var convert = function() {
 						break;
 					}
 				}
-				section.code = trimNewLines(f.substr(1, index - 2));
-				addSection(style, section);
-				if (index < f.length) {
-					addSection(style, {
-						"urls": [],
-						"urlPrefixes": [],
-						"domains": [],
-						"regexps": [],
-						"code": trimNewLines(f.substr(index))
-					});
+				if (f[0] === '{') {
+					section.code = trimNewLines(f.substr(1, index - 2));
+					if (index < f.length) {
+						addSection(style, {
+							"urls": [],
+							"urlPrefixes": [],
+							"domains": [],
+							"regexps": [],
+							"code": trimNewLines(f.substr(index))
+						});
+					}
+				} else {
+					section.code = trimNewLines(f);
 				}
+				addSection(style, section);
 			}
 			rs.push(style);
 		}
