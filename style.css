@@ -1,0 +1,23 @@
+body {
+	background-color: #EEE;
+}
+.main {
+	width: 100%;
+	max-width: 1280px;
+	margin: 10px auto;
+}
+.main > * {
+	width: 100%;
+	margin-bottom: 10px;
+	min-height: 0;
+}
+.mdl-card__supporting-text {
+	width: 100%;
+	box-sizing: border-box;
+}
+#download-label {
+	display: none;
+}
+.copyright {
+	text-align: center;
+}
