@@ -1,4 +1,5 @@
 var dbFileElm = document.getElementById('dbfile');
+var CssToProperty = {"url": "urls", "url-prefix": "urlPrefixes", "domain": "domains", "regexp": "regexps"};
 
 // Start the worker in which sql.js will run
 var worker = new Worker("sql.js/worker.sql.js");
@@ -207,7 +208,6 @@ dbFileElm.onchange = function() {
 
 var convert = function() {
 	var rs = [];
-	var CssToProperty = {"url": "urls", "url-prefix": "urlPrefixes", "domain": "domains", "regexp": "regexps"};
 	execute('SELECT * FROM styles', function(result) {
 		// get columns
 		for (var k in result[0].columns) {
