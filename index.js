@@ -40,6 +40,150 @@ function toc(msg) {
 	console.log((msg||'toc') + ": " + dt + "ms");
 }
 
+function trimNewLines(s) {
+	return s.replace(/^[\s\n]+/, "").replace(/[\s\n]+$/, "");
+}
+
+// parse mozilla format, return sections
+function parseMozillaFormat(css) {
+	let allSection = [{
+		"urls": [],
+		"urlPrefixes": [],
+		"domains": [],
+		"regexps": [],
+		"code": ""
+	}];
+	let mozStyle = trimNewLines(css.replace(/@namespace url\((.*?)\);/g, ""));
+	let currentIndex = mozStyle.indexOf('@-moz-document ');
+	let lastIndex = currentIndex;
+	if (currentIndex > 0) {
+		allSection[0].code += "\n" + trimNewLines(mozStyle.substr(0, currentIndex - 1));
+	}
+	// split by @-moz-document
+	while (mozStyle.indexOf('@-moz-document ', currentIndex) >= 0) {
+		currentIndex++;
+		// Jump to next
+		let nextMoz = mozStyle.indexOf('@-moz-document ', currentIndex);
+		let nextComment = mozStyle.indexOf('/*', currentIndex);
+		if (nextComment === -1){
+			nextComment = nextMoz;
+		}
+		let nextQuote = mozStyle.indexOf('"', currentIndex);
+		if (nextQuote === -1){
+			nextQuote = nextMoz;
+		}
+		currentIndex = Math.min(nextMoz, nextComment, nextQuote);
+		if (currentIndex < 0) {
+			currentIndex = mozStyle.length;
+			parseOneSection(mozStyle.substr(lastIndex, currentIndex));
+			break;
+		}
+		currentIndex = ignoreSomeCodes(mozStyle, currentIndex);
+		if (mozStyle.indexOf('@-moz-document ', currentIndex) === currentIndex) {
+			parseOneSection(mozStyle.substr(lastIndex, currentIndex - lastIndex));
+			lastIndex = currentIndex;
+		}
+	}
+	// remove global section if it is empty
+	allSection[0].code = trimNewLines(allSection[0].code);
+	if (allSection[0].code === '') {
+		allSection.splice(0, 1);
+	}
+	return allSection;
+	function ignoreSomeCodes(f, index) {
+		// ignore quotation marks
+		if (f[index] === '"') {
+			index++;
+			do {
+				index = f.indexOf('"', index);
+				index++;
+			} while (f[index - 2] === '\\');
+		}
+		if (f[index] === "'") {
+			index++;
+			do {
+				index = f.indexOf("'", index);
+				index++;
+			} while (f[index - 2] === '\\');
+		}
+		// ignore comments
+		if (f[index] === '/' && f[index + 1] === '*') {
+			index += 2;
+			index = f.indexOf('*/', index);
+			index ++;
+		}
+		return index;
+	}
+	function parseOneSection(f) {
+		f = f.replace('@-moz-document ', '');
+		if (f === '') {
+			return;
+		}
+		let section = {
+			"urls": [],
+			"urlPrefixes": [],
+			"domains": [],
+			"regexps": [],
+			"code": ""
+		};
+		while (true) {
+			let i = 0;
+			do {
+				f = trimNewLines(f).replace(/^,/, '').replace(/^\/\*(.*?)\*\//, '');
+				if (i++ > 30) {
+					console.error(f.substr(0, 20));
+					throw new Error("Timeout. May be is not a legitimate CSS");
+				}
+			} while (!/^(url|url-prefix|domain|regexp)\((['"]?)(.+?)\2\)/.test(f) && f[0] !== '{');
+			let m = f.match(/^(url|url-prefix|domain|regexp)\((['"]?)(.+?)\2\)/);
+			if (!m) {
+				break;
+			}
+			f = f.replace(m[0], '');
+			let aType = CssToProperty[m[1]];
+			let aValue = aType != "regexps" ? m[3] : m[3].replace(/\\\\/g, "\\");
+			if (section[aType].indexOf(aValue) < 0) {
+				section[aType].push(aValue);
+			}
+		}
+		// split this section
+		let index = 0;
+		let leftCount = 0;
+		while (index < f.length - 1) {
+			index = ignoreSomeCodes(f, index);
+			if (f[index] === '{') {
+				leftCount++;
+			} else if (f[index] === '}') {
+				leftCount--;
+			}
+			index++;
+			if (leftCount <= 0) {
+				break;
+			}
+		}
+		if (f[0] === '{') {
+			section.code = trimNewLines(f.substr(1, index - 2));
+			if (index < f.length - 1) {
+				allSection[0].code += "\n" + trimNewLines(f.substr(index));
+			}
+		} else {
+			section.code = trimNewLines(f);
+		}
+		addSection(section);
+	}
+	function addSection(section) {
+		// don't add empty sections
+		if (!section.code) {
+			return;
+		}
+		if (!section.urls.length && !section.urlPrefixes.length && !section.domains.length && !section.regexps.length) {
+			allSection[0].code += "\n" + section.code;
+		} else {
+			allSection.push(section);
+		}
+	}
+}
+
 // Load a db from a file
 dbFileElm.onchange = function() {
 	var f = dbFileElm.files[0];
@@ -100,14 +244,15 @@ var convert = function() {
 		for (var i = 0; i < result[0].values.length; i++) {
 			// style basic info
 			var style = {
-				"sections": [],
 				"url": result[0].values[i][url],
 				"updateUrl": result[0].values[i][updateUrl],
 				"md5Url": result[0].values[i][md5Url],
 				"originalMd5": result[0].values[i][originalMd5],
 				"name": result[0].values[i][name],
 				"enabled": result[0].values[i][enabled],
-				"id": result[0].values[i][id]
+				"advanced": {"item": {}, "saved": {}, "css": []},
+				"id": result[0].values[i][id],
+				"sections": parseMozillaFormat(result[0].values[i][code])
 			};
 			// updateUrl
 			if (style.updateUrl.indexOf('userstyles.org') > 0) {
@@ -118,89 +263,13 @@ var convert = function() {
 				}
 				style.updateUrl = 'https://userstyles.org/styles/chrome/' + style_id + '.json';
 			}
-			// code
-			var codeContent = result[0].values[i][code].replace(/@namespace url\((.*?)\);/g, "");
-			// split by @-moz-document
-			var sections = codeContent.trim().split('@-moz-document ');
-			for (let f of sections) {
-				var section = {
-					"urls": [],
-					"urlPrefixes": [],
-					"domains": [],
-					"regexps": [],
-					"code": ""
-				};
-				while (true) {
-					f = trimNewLines(trimNewLines(f).replace(/^,/, ''));
-					var m = f.match(/^(url|url-prefix|domain|regexp)\((['"]?)(.+?)\2\)/);
-					if (!m) {
-						break;
-					}
-					f = f.replace(m[0], '');
-					var aType = CssToProperty[m[1]];
-					var aValue = aType != "regexps" ? m[3] : m[3].replace(/\\\\/g, "\\");
-					if (section[aType].indexOf(aValue) < 0) {
-						section[aType].push(aValue);
-					}
-				}
-				// split this section
-				var index = 0;
-				var leftCount = 0;
-				while (index < f.length) {
-					// ignore comments
-					if (f[index] === '/' && f[index + 1] === '*') {
-						index += 2;
-						while (f[index] !== '*' || f[index + 1] !== '/') {
-							index++;
-						}
-						index += 2;
-					}
-					if (f[index] === '{') {
-						leftCount++;
-					}
-					if (f[index] === '}') {
-						leftCount--;
-					}
-					index++;
-					if (leftCount <= 0) {
-						break;
-					}
-				}
-				if (f[0] === '{') {
-					section.code = trimNewLines(f.substr(1, index - 2));
-					if (index < f.length) {
-						addSection(style, {
-							"urls": [],
-							"urlPrefixes": [],
-							"domains": [],
-							"regexps": [],
-							"code": trimNewLines(f.substr(index))
-						});
-					}
-				} else {
-					section.code = trimNewLines(f);
-				}
-				addSection(style, section);
-			}
 			rs.push(style);
 		}
 		download('xtyle.json', JSON.stringify(rs));
 	});
 };
 
-function addSection(style, section) {
-	// don't add empty sections
-	if (!(section.code || section.urls || section.urlPrefixes || section.domains || section.regexps)) {
-		return;
-	}
-	style.sections.push(section);
-}
-
-function trimNewLines(s) {
-	return s.replace(/^[\s\n]+/, "").replace(/[\s\n]+$/, "");
-}
-
-var download = function(name, content) {
+function download(name, content) {
 	var a = document.getElementById('download');
 	var blob = new Blob([content]);
 	var evt = document.createEvent("MouseEvents");
