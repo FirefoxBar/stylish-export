@@ -1,6 +1,6 @@
 //languages
 var languages = {'zh-CN': 'index.html', 'zh-TW': 'index_zh_tw.html', 'en': 'index_en.html'};
-if (!window.location.search.includes('focus-language')) {
+if (!window.location.search.includes('force-language')) {
 	var language = navigator.language;
 	if (typeof(languages[language]) === 'undefined') {
 		language = 'en';
