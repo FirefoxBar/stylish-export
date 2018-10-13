@@ -19,7 +19,7 @@ document.addEventListener("DOMContentLoaded", function() {
 	}
 
 	var dbFileElm = document.getElementById('dbfile');
-	var CssToProperty = {"url": "urls", "url-prefix": "urlPrefixes", "domain": "domains", "regexp": "regexps"};
+	var CssToProperty = {"url": "urls", "url-prefix": "urlPrefixes", "domain": "domains", "regexp": "regexps", "exclude": "exclude"};
 
 	// Start the worker in which sql.js will run
 	var worker = new Worker("sql.js/worker.sql.js");
@@ -72,6 +72,7 @@ document.addEventListener("DOMContentLoaded", function() {
 			"urlPrefixes": [],
 			"domains": [],
 			"regexps": [],
+			"exclude": [],
 			"code": ""
 		}];
 		let mozStyle = trimNewLines(css.replace(/@namespace url\((.*?)\);/g, ""));
@@ -159,6 +160,7 @@ document.addEventListener("DOMContentLoaded", function() {
 				"urlPrefixes": [],
 				"domains": [],
 				"regexps": [],
+				"exclude": [],
 				"code": ""
 			};
 			while (true) {
